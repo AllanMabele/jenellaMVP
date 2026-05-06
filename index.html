@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Jenella — Crypto Invoice & USDT Flow</title>
-<meta name="description" content="Pay invoices with virtual card, auto-swap to USDT ERC20, and send to any external wallet — fulfilled by Jenella operators on Telegram." />
+<title>Jenella — Live Crypto Dashboard</title>
+<!-- Include Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#0a0a0a; --bg-2:#111315;
@@ -24,316 +25,193 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
   body{
-    background:
-      radial-gradient(1000px 600px at 80% -10%, rgba(20,224,194,0.18), transparent 60%),
-      radial-gradient(800px 500px at -10% 110%, rgba(20,224,194,0.10), transparent 60%),
-      var(--bg);
+    background: radial-gradient(1000px 600px at 80% -10%, rgba(20,224,194,0.18), transparent 60%), var(--bg);
     transition:background .4s ease, color .4s ease;
   }
   header{
     display:flex;align-items:center;justify-content:space-between;
     padding:18px 28px;border-bottom:1px solid var(--card-border);
     backdrop-filter:blur(12px);position:sticky;top:0;z-index:10;
-    background:linear-gradient(180deg, rgba(10,10,10,0.6), rgba(10,10,10,0.2));
   }
-  .light header{background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.3px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;}
   .logo{
     width:38px;height:38px;border-radius:11px;
     background:linear-gradient(135deg,var(--teal),var(--teal-2));
-    display:grid;place-items:center;color:#062421;font-weight:900;font-size:18px;
-    box-shadow:0 8px 22px rgba(20,224,194,0.35);
+    display:grid;place-items:center;color:#062421;font-weight:900;
   }
-  .brand small{display:block;color:var(--muted);font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
-  .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .icon-btn{
     background:var(--card);border:1px solid var(--card-border);color:var(--text);
-    padding:8px 12px;border-radius:10px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;
-    text-decoration:none;transition:transform .15s ease, background .2s ease;
+    padding:8px 12px;border-radius:10px;cursor:pointer;font-size:13px;text-decoration:none;
   }
-  .icon-btn:hover{transform:translateY(-1px);background:var(--teal-soft)}
-  main{max-width:1100px;margin:0 auto;padding:32px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media (max-width:820px){main{grid-template-columns:1fr;padding:20px 14px 60px}}
+  main{max-width:1100px;margin:0 auto;padding:32px 20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:820px){main{grid-template-columns:1fr;}}
   .card{
     background:var(--card);border:1px solid var(--card-border);border-radius:18px;
     padding:22px;backdrop-filter:blur(14px);box-shadow:var(--shadow);
-    animation:fade .5s ease both;
   }
   .card.full{grid-column:1/-1}
-  .card h2{margin:0 0 4px;font-size:16px;letter-spacing:.4px}
-  .card .sub{color:var(--muted);font-size:12px;margin-bottom:18px}
-  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
-  .label{color:var(--muted);font-size:13px}
-  .value{font-weight:600}
-  .amount{font-size:34px;font-weight:800;letter-spacing:-.5px}
-  .amount small{font-size:14px;color:var(--muted);font-weight:500;margin-left:6px}
-  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600}
-  .badge.pending{background:rgba(255,193,7,0.12);color:#ffc940}
-  .badge.paid{background:rgba(61,220,151,0.15);color:var(--success)}
-  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.6s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .row{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+  .amount{font-size:34px;font-weight:800;}
+  .badge.paid{background:rgba(61,220,151,0.15);color:var(--success);padding:4px 8px;border-radius:8px}
   .btn{
-    appearance:none;border:0;cursor:pointer;font-weight:600;font-size:14px;
-    padding:12px 18px;border-radius:12px;color:#062421;
-    background:linear-gradient(135deg,var(--teal),var(--teal-2));
-    box-shadow:0 10px 24px rgba(20,224,194,0.3);
-    transition:transform .15s ease, box-shadow .2s ease, opacity .2s;
-    display:inline-flex;align-items:center;gap:8px;justify-content:center;
-    text-decoration:none;
+    width:100%; padding:12px; border-radius:12px; border:0; cursor:pointer;
+    background:linear-gradient(135deg,var(--teal),var(--teal-2)); color:#062421; font-weight:700;
   }
-  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,224,194,0.45)}
-  .btn:active{transform:translateY(0)}
-  .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
-  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--card-border);box-shadow:none}
-  .btn.ghost:hover{background:var(--teal-soft)}
-  .btn.block{width:100%}
-  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  input[type=text], input[type=number]{
-    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--card-border);
-    background:rgba(0,0,0,0.25);color:var(--text);font-size:14px;outline:none;
-    transition:border-color .2s, background .2s;
+  .btn.ghost{background:transparent; color:var(--text); border:1px solid var(--card-border)}
+  input{
+    width:100%;padding:12px;border-radius:12px;border:1px solid var(--card-border);
+    background:rgba(0,0,0,0.2);color:#fff;margin-bottom:10px;
   }
-  .light input{background:rgba(255,255,255,0.7)}
-  input:focus{border-color:var(--teal)}
-  .swap-box{
-    display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
-    background:rgba(0,0,0,0.2);border:1px dashed var(--card-border);border-radius:14px;padding:14px;
-  }
-  .light .swap-box{background:rgba(255,255,255,0.5)}
-  .swap-side{text-align:center}
-  .swap-side .ttl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
-  .swap-side .num{font-size:22px;font-weight:800;margin-top:4px}
-  .swap-arrow{
-    width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
-    background:var(--teal-soft);color:var(--teal);font-weight:900;
-  }
-  .log{max-height:260px;overflow-y:auto;padding-right:6px}
-  .log-item{
-    display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;
-    border:1px solid var(--card-border);margin-bottom:8px;font-size:13px;background:rgba(0,0,0,0.15);
-    animation:fade .3s ease both;
-  }
-  .light .log-item{background:rgba(255,255,255,0.6)}
-  .log-item .t{color:var(--muted);font-size:11px}
-  .log-item .tag{
-    font-size:10px;padding:2px 8px;border-radius:999px;background:var(--teal-soft);color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.5px;
-  }
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0}
-  .ops{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .op-chip{
-    display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;
-    background:var(--teal-soft);color:var(--teal);font-weight:700;font-size:12px;text-decoration:none;
-    border:1px solid rgba(20,224,194,.25);transition:transform .15s;
-  }
-  .op-chip:hover{transform:translateY(-1px)}
-  #toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:50}
-  .toast{
-    background:#101417;color:#fff;padding:12px 16px;border-radius:12px;border:1px solid var(--card-border);
-    box-shadow:0 10px 30px rgba(0,0,0,.4);min-width:240px;font-size:13px;
-    animation:slide .3s ease both;display:flex;align-items:center;gap:10px;
-  }
-  .toast.success{border-color:rgba(61,220,151,.5)}
-  .toast.error{border-color:rgba(255,94,108,.5)}
-  .toast .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--teal-soft);color:var(--teal);font-weight:900;font-size:12px}
-  .toast.success .ic{background:rgba(61,220,151,.18);color:var(--success)}
-  .toast.error .ic{background:rgba(255,94,108,.18);color:var(--danger)}
-  @keyframes slide{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
-  .spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.2);border-top-color:#062421;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .hash{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--teal);word-break:break-all}
-  .copy{cursor:pointer;color:var(--muted);font-size:11px;margin-left:6px}
-  .copy:hover{color:var(--teal)}
-  footer{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 30px}
-  .live-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(61,220,151,.12);color:var(--success);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .log-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--card-border);font-size:13px}
+  .tag{color:var(--teal);font-weight:bold}
+  #toasts{position:fixed;bottom:20px;right:20px;z-index:99}
+  .toast{background:#111;padding:12px 20px;border-radius:10px;border-left:4px solid var(--teal);margin-top:10px;box-shadow:0 10px 20px rgba(0,0,0,0.5)}
 </style>
 </head>
 <body>
   <header>
-    <div class="brand">
-      <div class="logo">J</div>
-      <div>
-        Jenella <span class="live-pill"><span class="dot"></span>LIVE</span>
-        <small>Crypto Invoice · USDT ERC20</small>
-      </div>
-    </div>
+    <div class="brand"><div class="logo">J</div><div>Jenella <small>LIVE</small></div></div>
     <div class="top-actions">
-      <a class="icon-btn" href="https://t.me/Jen4life007" target="_blank" rel="noopener">📲 @Jen4life007</a>
-      <a class="icon-btn" href="https://t.me/nix8407" target="_blank" rel="noopener">📲 @nix8407</a>
-      <a class="icon-btn" href="https://t.me/LiquidM_Admin" target="_blank" rel="noopener">📲 @LiquidM_Admin</a>
-      <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+        <button class="icon-btn" onclick="toggleTheme()">🌙 Mode</button>
     </div>
   </header>
 
   <main>
-    <!-- Invoice -->
+    <!-- Card Balance -->
     <section class="card">
-      <h2>Invoice</h2>
-      <div class="sub">Pay with your virtual card → auto-swaps to USDT ERC20</div>
-      <div class="row"><span class="label">Invoice ID</span><span class="value" id="invId">#JEN-00000</span></div>
-      <div class="row"><span class="label">Status</span><span class="badge pending" id="invStatus"><span class="dot"></span>Pending</span></div>
-      <div class="row"><span class="amount" id="invAmount">$250.00 <small>USD</small></span></div>
-      <button class="btn block" id="payBtn" onclick="payInvoice()">⚡ Pay Now</button>
-      <div class="ops">
-        <a class="op-chip" target="_blank" rel="noopener" href="https://t.me/Jen4life007">Operator: @Jen4life007</a>
-        <a class="op-chip" target="_blank" rel="noopener" href="https://t.me/nix8407">@nix8407</a>
-        <a class="op-chip" target="_blank" rel="noopener" href="https://t.me/LiquidM_Admin">@LiquidM_Admin</a>
-      </div>
+      <h2>Virtual Wallet</h2>
+      <div class="row"><span>Card USD</span><span id="cardBal" class="amount">$0.00</span></div>
+      <div class="row"><span>USDT (ERC20)</span><span id="usdtBal" class="amount">0.00</span></div>
+      <button class="btn" style="margin-top:10px" onclick="topUp()">＋ Free Top Up ($500)</button>
     </section>
 
-    <!-- Wallet -->
+    <!-- Payment -->
     <section class="card">
-      <h2>Virtual Fiat Wallet</h2>
-      <div class="sub">Free balance checker & free fiat top-up</div>
-      <div class="row"><span class="label">Card balance</span><span class="value" id="cardBal">$1,000.00 USD</span></div>
-      <div class="row"><span class="label">USDT balance</span><span class="value" id="usdtBal">0.00 USDT</span></div>
-      <div class="grid-2" style="margin-top:14px">
-        <button class="btn ghost" onclick="checkBalance()">🔍 Check Balance</button>
-        <button class="btn" onclick="topUp()">＋ Free Top Up</button>
-      </div>
+      <h2>Active Invoice</h2>
+      <div class="row"><span>ID:</span><span id="invId">#JEN-LOAD...</span></div>
+      <div class="row"><span>Amount:</span><span>$250.00 USD</span></div>
+      <button class="btn" id="payBtn" onclick="payInvoice()">⚡ Pay & Swap to USDT</button>
     </section>
 
-    <!-- Swap -->
-    <section class="card">
-      <h2>Fiat → USDT (Free Auto-Swap)</h2>
-      <div class="sub">Live rate · 1 USDT ≈ $1.00 (ERC20)</div>
-      <div class="swap-box">
-        <div class="swap-side"><div class="ttl">USD</div><div class="num" id="swapUsd">$0.00</div></div>
-        <div class="swap-arrow">→</div>
-        <div class="swap-side"><div class="ttl">USDT</div><div class="num" id="swapUsdt">0.00</div></div>
-      </div>
-      <div class="row" style="margin-top:14px"><span class="label">Last conversion</span><span class="value" id="lastSwap">—</span></div>
-    </section>
-
-    <!-- Send USDT -->
-    <section class="card">
-      <h2>Send USDT (ERC20) — Free</h2>
-      <div class="sub">Instant transfer to any external Ethereum address</div>
-      <div style="display:grid;gap:10px">
-        <input id="toAddr" type="text" placeholder="0x… recipient ERC20 address" />
-        <input id="sendAmt" type="number" placeholder="Amount in USDT" min="0" step="0.01"/>
-        <button class="btn block" onclick="sendUSDT()">💸 Send USDT</button>
-      </div>
-      <div class="row" style="margin-top:14px">
-        <span class="label">Last tx hash</span>
-        <span><span class="hash" id="txHash">—</span><span class="copy" onclick="copyHash()">copy</span></span>
-      </div>
+    <!-- Send -->
+    <section class="card full">
+      <h2>Withdraw USDT</h2>
+      <input id="toAddr" type="text" placeholder="Recipient 0x address" />
+      <input id="sendAmt" type="number" placeholder="Amount USDT" />
+      <button class="btn" onclick="sendUSDT()">💸 Send Now</button>
     </section>
 
     <!-- Activity -->
     <section class="card full">
-      <h2>Activity Log</h2>
-      <div class="sub">Real-time payments, swaps and transfers</div>
-      <div class="log" id="log">
-        <div class="empty" id="emptyLog">No activity yet — make your first payment ↑</div>
-      </div>
+      <h2>Activity Log (Live from DB)</h2>
+      <div id="log">Loading logs...</div>
     </section>
   </main>
 
-  <footer>© 2026 Jenella · Fulfilled by operators on Telegram · USDT ERC20</footer>
   <div id="toasts"></div>
 
 <script>
-  const OPERATORS = ["Jen4life007","nix8407","LiquidM_Admin"];
-  const tgPick = () => OPERATORS[Math.floor(Math.random()*OPERATORS.length)];
-  const tgUrl = (msg) => `https://t.me/${tgPick()}?text=${encodeURIComponent(msg)}`;
+  // CONFIGURATION
+  const SUPABASE_URL = "https://lylsbstusxitipdaohom.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5bHNic3R1c3hpdGlwZGFvaG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTA0ODQsImV4cCI6MjA5MzY2NjQ4NH0.2TWRoyRCtpwmozDgnUZopi3x9Ek403KrS51PHELqL4M";
+  const supabase =  supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  let state = {
-    invoiceId: "JEN-" + String(Math.floor(Math.random()*99999)).padStart(5,"0"),
-    invoiceAmount: 250,
-    cardBal: 1000,
-    usdtBal: 0,
-    paid: false,
-  };
+  let USER_KEY = localStorage.getItem("jenella_user_key") || "u_" + Math.random().toString(36).substring(7);
+  localStorage.setItem("jenella_user_key", USER_KEY);
 
-  document.getElementById("invId").textContent = "#" + state.invoiceId;
+  let state = { usd: 0, usdt: 0 };
 
-  function fmtUSD(n){return "$" + n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) + " USD"}
-  function fmtUSDT(n){return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) + " USDT"}
-  function refresh(){
-    document.getElementById("cardBal").textContent = fmtUSD(state.cardBal);
-    document.getElementById("usdtBal").textContent = fmtUSDT(state.usdtBal);
-  }
-  function toast(msg, type="info"){
-    const t = document.createElement("div");
-    t.className = "toast " + type;
-    t.innerHTML = `<span class="ic">${type==="success"?"✓":type==="error"?"!":"i"}</span><span>${msg}</span>`;
-    document.getElementById("toasts").appendChild(t);
-    setTimeout(()=>t.remove(),3800);
-  }
-  function logEvent(tag, text){
-    const empty = document.getElementById("emptyLog"); if(empty) empty.remove();
-    const el = document.createElement("div");
-    el.className = "log-item";
-    el.innerHTML = `<div><div><b>${text}</b></div><div class="t">${new Date().toLocaleString()}</div></div><span class="tag">${tag}</span>`;
-    document.getElementById("log").prepend(el);
-  }
-  function randHash(){
-    const h="0123456789abcdef"; let s="0x";
-    for(let i=0;i<64;i++) s+=h[Math.floor(Math.random()*16)];
-    return s;
+  // INITIALIZE DATA
+  async function init() {
+    let { data, error } = await supabase.from('user_wallets').select('*').eq('user_key', USER_KEY).single();
+    
+    if (!data) {
+        // Create new user if not exists
+        await supabase.from('user_wallets').insert([{ user_key: USER_KEY, usd_balance: 1000, usdt_balance: 0 }]);
+        state.usd = 1000; state.usdt = 0;
+    } else {
+        state.usd = data.usd_balance;
+        state.usdt = data.usdt_balance;
+    }
+    updateUI();
+    loadLogs();
   }
 
-  function payInvoice(){
-    if(state.paid){ toast("Invoice already paid","error"); return; }
-    if(state.cardBal < state.invoiceAmount){ toast("Insufficient card balance — top up first","error"); return; }
-    const btn = document.getElementById("payBtn");
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing…';
-    setTimeout(()=>{
-      state.cardBal -= state.invoiceAmount;
-      state.usdtBal += state.invoiceAmount;
-      state.paid = true;
-      document.getElementById("invStatus").outerHTML = '<span class="badge paid" id="invStatus"><span class="dot"></span>Paid</span>';
-      document.getElementById("swapUsd").textContent = fmtUSD(state.invoiceAmount);
-      document.getElementById("swapUsdt").textContent = state.invoiceAmount.toFixed(2);
-      document.getElementById("lastSwap").textContent = `${fmtUSD(state.invoiceAmount)} → ${state.invoiceAmount.toFixed(2)} USDT`;
-      refresh();
-      logEvent("PAID", `Invoice #${state.invoiceId} paid · auto-swapped to ${state.invoiceAmount} USDT`);
-      toast("Payment confirmed & swapped to USDT","success");
-      btn.innerHTML = "✅ Paid · Notify Operator";
-      btn.onclick = ()=> window.open(tgUrl(`Invoice #${state.invoiceId} paid for ${state.invoiceAmount} USDT. Please confirm receipt.`),"_blank");
-      btn.disabled = false;
-    }, 1400);
+  function updateUI() {
+    document.getElementById("cardBal").textContent = `$${parseFloat(state.usd).toFixed(2)}`;
+    document.getElementById("usdtBal").textContent = `${parseFloat(state.usdt).toFixed(2)}`;
+    document.getElementById("invId").textContent = "#JEN-" + USER_KEY.toUpperCase().slice(-5);
   }
 
-  function checkBalance(){
-    toast(`Card: ${fmtUSD(state.cardBal)} · USDT: ${fmtUSDT(state.usdtBal)}`,"success");
-    logEvent("CHECK", `Balance checked`);
+  async function topUp() {
+    state.usd += 500;
+    await supabase.from('user_wallets').update({ usd_balance: state.usd }).eq('user_key', USER_KEY);
+    await logEvent('TOPUP', 'Added $500.00 via Free Topup', 500, 'USD');
+    toast("Topped up $500!");
+    updateUI();
   }
 
-  function topUp(){
-    const amt = parseFloat(prompt("Top up amount in USD:", "500"));
-    if(!amt || amt<=0){ toast("Invalid amount","error"); return; }
-    state.cardBal += amt; refresh();
-    logEvent("TOP UP", `Card topped up with ${fmtUSD(amt)}`);
-    toast(`Topped up ${fmtUSD(amt)} (free)`,"success");
+  async function payInvoice() {
+    if (state.usd < 250) return toast("Insufficient funds", "error");
+    
+    state.usd -= 250;
+    state.usdt += 250; // 1:1 Swap logic
+    
+    await supabase.from('user_wallets').update({ usd_balance: state.usd, usdt_balance: state.usdt }).eq('user_key', USER_KEY);
+    await logEvent('PAYMENT', 'Paid Invoice #JEN-250 & Swapped to USDT', 250, 'USDT');
+    
+    toast("Invoice Paid & Swapped!");
+    updateUI();
   }
 
-  function sendUSDT(){
-    const to = document.getElementById("toAddr").value.trim();
+  async function sendUSDT() {
     const amt = parseFloat(document.getElementById("sendAmt").value);
-    if(!/^0x[a-fA-F0-9]{40}$/.test(to)){ toast("Invalid ERC20 address","error"); return; }
-    if(!amt || amt<=0){ toast("Invalid amount","error"); return; }
-    if(amt > state.usdtBal){ toast("Insufficient USDT balance","error"); return; }
-    state.usdtBal -= amt; refresh();
-    const h = randHash();
-    document.getElementById("txHash").textContent = h;
-    logEvent("SEND", `Sent ${fmtUSDT(amt)} → ${to.slice(0,10)}…${to.slice(-6)}`);
-    toast("USDT transfer broadcast (free)","success");
-    setTimeout(()=>{
-      window.open(tgUrl(`Sent ${amt} USDT (ERC20) to ${to}\nTx: ${h}\nPlease confirm settlement.`),"_blank");
-    }, 700);
+    const addr = document.getElementById("toAddr").value;
+    
+    if (state.usdt < amt) return toast("Insufficient USDT", "error");
+    if (addr.length < 10) return toast("Invalid Address", "error");
+
+    state.usdt -= amt;
+    await supabase.from('user_wallets').update({ usdt_balance: state.usdt }).eq('user_key', USER_KEY);
+    await logEvent('TRANSFER', `Sent to ${addr.slice(0,6)}...`, amt, 'USDT');
+    
+    toast("Transfer Successful!");
+    updateUI();
   }
 
-  function copyHash(){
-    const h = document.getElementById("txHash").textContent;
-    if(h==="—") return;
-    navigator.clipboard.writeText(h); toast("Hash copied","success");
+  async function logEvent(type, desc, amt, cur) {
+    await supabase.from('activity_logs').insert([{ 
+        user_key: USER_KEY, type, description: desc, amount: amt, currency: cur 
+    }]);
+    loadLogs();
   }
 
-  function toggleTheme(){ document.body.classList.toggle("light"); }
+  async function loadLogs() {
+    const { data } = await supabase.from('activity_logs')
+        .select('*')
+        .eq('user_key', USER_KEY)
+        .order('created_at', { ascending: false });
 
-  refresh();
+    const container = document.getElementById("log");
+    container.innerHTML = data.map(l => `
+        <div class="log-item">
+            <div><b>${l.description}</b><br><small>${new Date(l.created_at).toLocaleString()}</small></div>
+            <div class="tag">${l.amount} ${l.currency}</div>
+        </div>
+    `).join('');
+  }
+
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = msg;
+    document.getElementById("toasts").appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  function toggleTheme() { document.body.classList.toggle("light"); }
+
+  init();
 </script>
 </body>
 </html>
