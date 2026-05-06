@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jenella MVP — Crypto Invoice & USDT Flow</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --bg-2:#111315;
+    --card:rgba(255,255,255,0.04);
+    --card-border:rgba(255,255,255,0.08);
+    --text:#f5f7f8;
+    --muted:#8a9499;
+    --teal:#14e0c2;
+    --teal-2:#0fbfa6;
+    --teal-soft:rgba(20,224,194,0.12);
+    --danger:#ff5e6c;
+    --success:#3ddc97;
+    --shadow:0 20px 60px rgba(0,0,0,0.45);
+  }
+  .light{
+    --bg:#f4f6f8;
+    --bg-2:#e9eef2;
+    --card:rgba(255,255,255,0.7);
+    --card-border:rgba(0,0,0,0.08);
+    --text:#0c1116;
+    --muted:#566069;
+    --teal-soft:rgba(15,191,166,0.15);
+    --shadow:0 20px 60px rgba(15,30,40,0.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+  body{
+    background:
+      radial-gradient(1000px 600px at 80% -10%, rgba(20,224,194,0.18), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, rgba(20,224,194,0.10), transparent 60%),
+      var(--bg);
+    transition:background .4s ease, color .4s ease;
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--card-border);
+    backdrop-filter:blur(12px);position:sticky;top:0;z-index:10;
+    background:linear-gradient(180deg, rgba(10,10,10,0.6), rgba(10,10,10,0.2));
+  }
+  .light header{background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px}
+  .logo{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--teal),var(--teal-2));
+    display:grid;place-items:center;color:#062421;font-weight:900;
+    box-shadow:0 8px 22px rgba(20,224,194,0.35);
+  }
+  .brand small{display:block;color:var(--muted);font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+  .top-actions{display:flex;gap:10px;align-items:center}
+  .icon-btn{
+    background:var(--card);border:1px solid var(--card-border);color:var(--text);
+    padding:8px 12px;border-radius:10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .icon-btn:hover{transform:translateY(-1px);background:var(--teal-soft)}
+  main{max-width:1100px;margin:0 auto;padding:32px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:820px){main{grid-template-columns:1fr;padding:20px 14px 60px}}
+  .card{
+    background:var(--card);border:1px solid var(--card-border);border-radius:18px;
+    padding:22px;backdrop-filter:blur(14px);box-shadow:var(--shadow);
+    animation:fade .5s ease both;
+  }
+  .card.full{grid-column:1/-1}
+  .card h2{margin:0 0 4px;font-size:16px;letter-spacing:.4px}
+  .card .sub{color:var(--muted);font-size:12px;margin-bottom:18px}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+  .label{color:var(--muted);font-size:13px}
+  .value{font-weight:600}
+  .amount{font-size:34px;font-weight:800;letter-spacing:-.5px}
+  .amount small{font-size:14px;color:var(--muted);font-weight:500;margin-left:6px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .badge.pending{background:rgba(255,193,7,0.12);color:#ffc940}
+  .badge.paid{background:rgba(61,220,151,0.15);color:var(--success)}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .btn{
+    appearance:none;border:0;cursor:pointer;font-weight:600;font-size:14px;
+    padding:12px 18px;border-radius:12px;color:#062421;
+    background:linear-gradient(135deg,var(--teal),var(--teal-2));
+    box-shadow:0 10px 24px rgba(20,224,194,0.3);
+    transition:transform .15s ease, box-shadow .2s ease, opacity .2s;
+    display:inline-flex;align-items:center;gap:8px;justify-content:center;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,224,194,0.45)}
+  .btn:active{transform:translateY(0)}
+  .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--card-border);box-shadow:none}
+  .btn.ghost:hover{background:var(--teal-soft)}
+  .btn.block{width:100%}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  input[type=text], input[type=number]{
+    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--card-border);
+    background:rgba(0,0,0,0.25);color:var(--text);font-size:14px;outline:none;
+    transition:border-color .2s, background .2s;
+  }
+  .light input{background:rgba(255,255,255,0.7)}
+  input:focus{border-color:var(--teal)}
+  .swap-box{
+    display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
+    background:rgba(0,0,0,0.2);border:1px dashed var(--card-border);border-radius:14px;padding:14px;
+  }
+  .light .swap-box{background:rgba(255,255,255,0.5)}
+  .swap-side{text-align:center}
+  .swap-side .ttl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  .swap-side .num{font-size:22px;font-weight:800;margin-top:4px}
+  .swap-arrow{
+    width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+    background:var(--teal-soft);color:var(--teal);font-weight:900;
+  }
+  .log{max-height:240px;overflow-y:auto;padding-right:6px}
+  .log-item{
+    display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--card-border);margin-bottom:8px;font-size:13px;background:rgba(0,0,0,0.15);
+    animation:fade .3s ease both;
+  }
+  .light .log-item{background:rgba(255,255,255,0.6)}
+  .log-item .t{color:var(--muted);font-size:11px}
+  .log-item .tag{
+    font-size:10px;padding:2px 8px;border-radius:999px;background:var(--teal-soft);color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  }
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0}
+  /* Toast */
+  #toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:50}
+  .toast{
+    background:#101417;color:#fff;padding:12px 16px;border-radius:12px;border:1px solid var(--card-border);
+    box-shadow:0 10px 30px rgba(0,0,0,.4);min-width:240px;font-size:13px;
+    animation:slide .3s ease both;display:flex;align-items:center;gap:10px;
+  }
+  .toast.success{border-color:rgba(61,220,151,.5)}
+  .toast.error{border-color:rgba(255,94,108,.5)}
+  .toast .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--teal-soft);color:var(--teal);font-weight:900;font-size:12px}
+  .toast.success .ic{background:rgba(61,220,151,.18);color:var(--success)}
+  .toast.error .ic{background:rgba(255,94,108,.18);color:var(--danger)}
+  @keyframes slide{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+  /* Loader */
+  .spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.2);border-top-color:#062421;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hash{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--teal);word-break:break-all}
+  .copy{cursor:pointer;color:var(--muted);font-size:11px;margin-left:6px}
+  .copy:hover{color:var(--teal)}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 30px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">J</div>
+    <div>
+      Jenella<small>Crypto Invoice MVP</small>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" onclick="sendToTelegram()">📲 Telegram</button>
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<main>
+  <!-- Invoice -->
+  <section class="card">
+    <h2>Invoice</h2>
+    <div class="sub">Pay this invoice with your virtual card → auto-converts to USDT</div>
+    <div class="row"><span class="label">Invoice ID</span><span class="value" id="invoiceId">#JEN-00000</span></div>
+    <div class="row"><span class="label">Status</span><span class="badge pending" id="statusBadge"><span class="dot"></span>Pending</span></div>
+    <div style="margin:18px 0 22px">
+      <div class="amount" id="invoiceAmount">$250.00 <small>USD</small></div>
+    </div>
+    <button class="btn block" id="payBtn" onclick="payNow()">⚡ Pay Now</button>
+  </section>
+
+  <!-- Wallet -->
+  <section class="card">
+    <h2>Virtual Fiat Wallet</h2>
+    <div class="sub">Simulated card balance in USD</div>
+    <div style="margin:8px 0 22px">
+      <div class="label">Card balance</div>
+      <div class="amount" id="cardBalance">$1,000.00 <small>USD</small></div>
+      <div class="label" style="margin-top:8px">USDT balance: <span class="value" id="usdtBalance">0.00 USDT</span></div>
+    </div>
+    <div class="grid-2">
+      <button class="btn ghost" onclick="checkBalance()">🔍 Check Balance</button>
+      <button class="btn" onclick="topUp()">＋ Top Up</button>
+    </div>
+  </section>
+
+  <!-- Swap -->
+  <section class="card">
+    <h2>Fiat → USDT Conversion</h2>
+    <div class="sub">Mock rate: 1 USDT = $<span id="rate">1.00</span> (ERC20)</div>
+    <div class="swap-box">
+      <div class="swap-side">
+        <div class="ttl">USD</div>
+        <div class="num" id="swapUsd">$0.00</div>
+      </div>
+      <div class="swap-arrow">→</div>
+      <div class="swap-side">
+        <div class="ttl">USDT</div>
+        <div class="num" id="swapUsdt">0.00</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="label">Last conversion</span>
+      <span class="value" id="lastSwap">—</span>
+    </div>
+  </section>
+
+  <!-- Transfer -->
+  <section class="card">
+    <h2>USDT Transfer (ERC20)</h2>
+    <div class="sub">Send USDT to any external Ethereum wallet</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+      <input type="text" id="walletAddr" placeholder="0x… recipient wallet (42 chars)" />
+      <input type="number" id="sendAmt" placeholder="Amount in USDT" min="0" step="0.01"/>
+      <button class="btn block" onclick="sendUsdt()">💸 Send USDT</button>
+    </div>
+    <div id="lastTx" style="margin-top:14px;display:none">
+      <div class="label">Last transaction hash</div>
+      <div><span class="hash" id="lastTxHash"></span><span class="copy" onclick="copyHash()">copy</span></div>
+    </div>
+  </section>
+
+  <!-- Activity Log -->
+  <section class="card full">
+    <h2>Activity Log</h2>
+    <div class="sub">Real-time payments, swaps and transfers</div>
+    <div class="log" id="log">
+      <div class="empty">No activity yet — make your first payment ↑</div>
+    </div>
+  </section>
+</main>
+
+<footer>© 2026 Jenella MVP — Demo only · Mock blockchain & fiat layer</footer>
+<div id="toasts"></div>
+
+<script>
+/* ---------- State ---------- */
+const state = {
+  invoice:{ id:"#JEN-"+Math.floor(10000+Math.random()*89999), amount:250.00, status:"Pending" },
+  cardBalance:1000.00,
+  usdtBalance:0,
+  rate:1.00, // 1 USDT = $1
+  log:[],
+  lastTxHash:null,
+};
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const fmtUsd = n => "$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtUsdt = n => Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function toast(msg, type="info"){
+  const el = document.createElement("div");
+  el.className = "toast "+type;
+  const ic = type==="success"?"✓":type==="error"?"!":"i";
+  el.innerHTML = `<span class="ic">${ic}</span><span>${msg}</span>`;
+  $("toasts").appendChild(el);
+  setTimeout(()=>{el.style.opacity=0;el.style.transform="translateX(20px)";setTimeout(()=>el.remove(),300)},3000);
+}
+
+function addLog(type,text,extra=""){
+  state.log.unshift({type,text,extra,t:new Date()});
+  renderLog();
+}
+function renderLog(){
+  const el = $("log");
+  if(!state.log.length){ el.innerHTML='<div class="empty">No activity yet — make your first payment ↑</div>';return}
+  el.innerHTML = state.log.map(l=>`
+    <div class="log-item">
+      <div>
+        <span class="tag">${l.type}</span>
+        <div style="margin-top:6px">${l.text}</div>
+        ${l.extra?`<div class="hash" style="margin-top:4px">${l.extra}</div>`:""}
+      </div>
+      <div class="t">${l.t.toLocaleTimeString()}</div>
+    </div>
+  `).join("");
+}
+
+function render(){
+  $("invoiceId").textContent = state.invoice.id;
+  $("invoiceAmount").innerHTML = fmtUsd(state.invoice.amount)+" <small>USD</small>";
+  const b = $("statusBadge");
+  if(state.invoice.status==="Paid"){
+    b.className="badge paid"; b.innerHTML='<span class="dot"></span>Paid';
+    $("payBtn").disabled = true; $("payBtn").innerHTML="✓ Invoice Paid";
+  } else {
+    b.className="badge pending"; b.innerHTML='<span class="dot"></span>Pending';
+  }
+  $("cardBalance").innerHTML = fmtUsd(state.cardBalance)+" <small>USD</small>";
+  $("usdtBalance").textContent = fmtUsdt(state.usdtBalance)+" USDT";
+  $("rate").textContent = state.rate.toFixed(2);
+}
+
+/* ---------- Actions ---------- */
+function checkBalance(){
+  toast("Card balance: "+fmtUsd(state.cardBalance),"info");
+}
+function topUp(){
+  const amt = 250;
+  state.cardBalance += amt;
+  addLog("Top-up","Added "+fmtUsd(amt)+" to virtual card");
+  toast("Top-up successful (+"+fmtUsd(amt)+")","success");
+  render();
+}
+
+function payNow(){
+  if(state.invoice.status==="Paid") return;
+  const amt = state.invoice.amount;
+  if(state.cardBalance < amt){
+    toast("Insufficient card balance — top up first","error");
+    return;
+  }
+  const btn = $("payBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing…';
+  setTimeout(()=>{
+    state.cardBalance -= amt;
+    const usdt = amt / state.rate;
+    state.usdtBalance += usdt;
+    state.invoice.status = "Paid";
+
+    $("swapUsd").textContent = fmtUsd(amt);
+    $("swapUsdt").textContent = fmtUsdt(usdt);
+    $("lastSwap").textContent = fmtUsd(amt)+" → "+fmtUsdt(usdt)+" USDT";
+
+    addLog("Payment","Paid invoice "+state.invoice.id+" ("+fmtUsd(amt)+")");
+    addLog("Swap","Converted "+fmtUsd(amt)+" → "+fmtUsdt(usdt)+" USDT @ rate "+state.rate.toFixed(2));
+    toast("Payment successful — "+fmtUsdt(usdt)+" USDT received","success");
+    render();
+  }, 1200);
+}
+
+function isValidWallet(addr){
+  return typeof addr==="string" && addr.startsWith("0x") && addr.length===42;
+}
+function fakeTxHash(){
+  return "0x"+Array.from({length:8}).map(()=>Math.random().toString(16).substring(2,10)).join("").substring(0,64);
+}
+
+function sendUsdt(){
+  const addr = $("walletAddr").value.trim();
+  const amt = parseFloat($("sendAmt").value);
+  if(!isValidWallet(addr)){ toast("Invalid wallet address (must be 0x… 42 chars)","error");return}
+  if(!amt || amt<=0){ toast("Enter a valid amount","error");return}
+  if(amt > state.usdtBalance){ toast("Insufficient USDT balance","error");return}
+
+  toast("Broadcasting transaction…","info");
+  setTimeout(()=>{
+    state.usdtBalance -= amt;
+    const hash = fakeTxHash();
+    state.lastTxHash = hash;
+    $("lastTx").style.display="block";
+    $("lastTxHash").textContent = hash;
+    addLog("Transfer","Sent "+fmtUsdt(amt)+" USDT to "+addr.substring(0,8)+"…"+addr.slice(-6), "tx: "+hash);
+    toast("USDT transfer confirmed","success");
+    $("sendAmt").value="";
+    render();
+  },1400);
+}
+
+function copyHash(){
+  if(!state.lastTxHash) return;
+  navigator.clipboard.writeText(state.lastTxHash).then(()=>toast("Hash copied to clipboard","success"));
+}
+
+function sendToTelegram(){
+  console.log("Sent to Telegram CAM", {
+    invoice:state.invoice, balance:state.cardBalance, usdt:state.usdtBalance, log:state.log
+  });
+  toast("Sent to Telegram CAM (mock)","success");
+  addLog("Telegram","Synced session to Telegram CAM");
+}
+
+function toggleTheme(){
+  document.body.classList.toggle("light");
+  $("themeBtn").textContent = document.body.classList.contains("light") ? "☀️" : "🌙";
+}
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
